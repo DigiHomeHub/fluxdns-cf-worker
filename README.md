@@ -210,3 +210,4 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 - Cloudflare Workers for providing the serverless platform
 - DNS-over-HTTPS specification (RFC 8484)
+- [MosDNS](https://github.com/IrineSistiana/mosdns)
