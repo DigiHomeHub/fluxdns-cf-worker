@@ -1,0 +1,24 @@
+{
+  "plugins": [
+    {
+      "tag": "cache",
+      "type": "cache",
+      "args": {
+        "size": 1024,
+        "ttl": 300,
+        "minTtl": 60,
+        "maxTtl": 3600,
+        "negativeCache": true
+      }
+    },
+    {
+      "tag": "forward_to_cloudflare",
+      "type": "forward",
+      "args": {
+        "upstream": "https://security.cloudflare-dns.com/dns-query",
+        "timeout": 5000
+      }
+    }
+  ],
+  "logLevel": "info"
+}

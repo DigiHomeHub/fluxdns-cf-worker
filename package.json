@@ -1,0 +1,33 @@
+{
+  "name": "fluxdns-cf-worker",
+  "version": "1.0.0",
+  "description": "A flexible DNS over HTTPS proxy using Cloudflare Workers",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:unit": "npm test -- --testPathPattern=unit",
+    "test:integration": "npm test -- --testPathPattern=integration",
+    "test:core": "npm test -- --testPathIgnorePatterns=tests/server/ --testPathIgnorePatterns=tests/matchers/ --testPathIgnorePatterns=tests/plugins/",
+    "test:server": "npm test -- --testPathPattern=tests/server/",
+    "test:matchers": "npm test -- --testPathPattern=tests/matchers/",
+    "test:plugins": "npm test -- --testPathPattern=tests/plugins/",
+    "dev": "wrangler dev",
+    "deploy": "wrangler publish"
+  },
+  "keywords": [
+    "dns",
+    "doh",
+    "cloudflare",
+    "workers",
+    "proxy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20230518.0",
+    "jest": "^29.5.0",
+    "wrangler": "^3.0.0"
+  }
+}

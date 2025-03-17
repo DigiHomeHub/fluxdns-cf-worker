@@ -1,0 +1,75 @@
+{
+  "plugins": [
+    {
+      "tag": "cache",
+      "type": "cache",
+      "args": {
+        "ttl": 300
+      }
+    },
+    {
+      "tag": "hosts",
+      "type": "hosts",
+      "args": {
+        "hosts": {
+          "local.example.com": "192.168.1.10",
+          "test.local": "127.0.0.1",
+          "ipv6.test": "::1"
+        },
+        "ttl": 3600
+      }
+    },
+    {
+      "tag": "redirect_service",
+      "type": "redirect",
+      "args": {
+        "rules": [
+          {
+            "from": "deprecated.example.com",
+            "to": "new.example.com"
+          },
+          {
+            "from": "old.service.com",
+            "to": "new.service.com"
+          }
+        ],
+        "includeSubdomains": true
+      }
+    },
+    {
+      "tag": "match_private",
+      "type": "matcher",
+      "args": {
+        "domain": ["private.local", "*.internal", "corp.example.com"],
+        "action": "accept"
+      }
+    },
+    {
+      "tag": "private_dns",
+      "type": "forward",
+      "args": {
+        "upstream": "https://dns.google/dns-query",
+        "timeout": 4000
+      },
+      "if_matched": "match_private"
+    },
+    {
+      "tag": "default_forward",
+      "type": "forward",
+      "args": {
+        "upstream": "https://security.cloudflare-dns.com/dns-query",
+        "timeout": 5000
+      }
+    },
+    {
+      "tag": "adjust_ttl",
+      "type": "response-modifier",
+      "args": {
+        "minTtl": 60,
+        "maxTtl": 86400,
+        "domains": ["example.com", "*.example.org"]
+      }
+    }
+  ],
+  "logLevel": "info"
+}

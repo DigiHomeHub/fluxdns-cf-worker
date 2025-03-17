@@ -1,0 +1,48 @@
+{
+  "plugins": [
+    {
+      "tag": "cache",
+      "type": "cache",
+      "args": {
+        "ttl": 300,
+        "negativeCache": true,
+        "negativeTtl": 60
+      }
+    },
+    {
+      "tag": "block_ads",
+      "type": "matcher",
+      "args": {
+        "blocklist": "ads",
+        "action": "reject",
+        "response": "nxdomain"
+      }
+    },
+    {
+      "tag": "block_trackers",
+      "type": "matcher",
+      "args": {
+        "blocklist": "trackers",
+        "action": "reject",
+        "response": "nxdomain"
+      }
+    },
+    {
+      "tag": "forward_to_cloudflare",
+      "type": "forward",
+      "args": {
+        "upstream": "https://security.cloudflare-dns.com/dns-query",
+        "timeout": 5000
+      }
+    },
+    {
+      "tag": "minimize_ttl",
+      "type": "response-modifier",
+      "args": {
+        "maxTtl": 86400,
+        "minTtl": 60
+      }
+    }
+  ],
+  "logLevel": "info"
+}

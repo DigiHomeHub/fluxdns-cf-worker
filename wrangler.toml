@@ -1,0 +1,30 @@
+name = "fluxdns"
+main = "src/index.js"
+compatibility_date = "2023-05-18"
+
+# This project is licensed under GNU General Public License v3.0
+# See the LICENSE file in the repository for full terms
+
+# KV Namespace for storing domain lists, IP lists, and hosts files
+kv_namespaces = [
+  { binding = "DATA_KV", id = "your-kv-namespace-id-here", preview_id = "your-preview-kv-id-here" }
+]
+
+[vars]
+# Configuration variables
+CONFIG_VERSION = "1.0.0"
+
+# Example configuration - customize as needed
+DEFAULT_UPSTREAM = "https://cloudflare-dns.com/dns-query"
+ENABLE_ADBLOCK = "true"
+ADBLOCK_DOMAINS = "ads.example.com,tracker.example.com,analytics.example.com"
+
+# Development environment
+[env.dev]
+name = "fluxdns-dev"
+vars = { CONFIG_VERSION = "dev" }
+
+# Production environment
+[env.production]
+name = "fluxdns"
+route = { pattern = "dns.example.com/*", zone_name = "example.com" } 

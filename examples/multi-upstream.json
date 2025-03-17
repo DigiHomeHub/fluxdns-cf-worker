@@ -1,0 +1,54 @@
+{
+  "plugins": [
+    {
+      "tag": "cache",
+      "type": "cache",
+      "args": {
+        "ttl": 300
+      }
+    },
+    {
+      "tag": "local_domains",
+      "type": "matcher",
+      "args": {
+        "domain": ["local.test", "example.internal", "*.corp"],
+        "action": "accept"
+      }
+    },
+    {
+      "tag": "internal_dns",
+      "type": "forward",
+      "args": {
+        "upstream": "https://internal.dns.server/dns-query",
+        "timeout": 3000
+      },
+      "if_matched": "local_domains"
+    },
+    {
+      "tag": "china_domains",
+      "type": "matcher",
+      "args": {
+        "url": "https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/direct-list.txt",
+        "action": "accept"
+      }
+    },
+    {
+      "tag": "china_dns",
+      "type": "forward",
+      "args": {
+        "upstream": "https://doh.pub/dns-query",
+        "timeout": 3000
+      },
+      "if_matched": "china_domains"
+    },
+    {
+      "tag": "default_dns",
+      "type": "forward",
+      "args": {
+        "upstream": "https://security.cloudflare-dns.com/dns-query",
+        "timeout": 5000
+      }
+    }
+  ],
+  "logLevel": "info"
+}
