@@ -12,7 +12,10 @@ import {
   loadPlugins,
   registerPlugin,
 } from "./core/plugin-chain.js";
-import { createPluginChainFromMosDNS } from "./mosdns-adapter.js";
+import {
+  createPluginChainFromMosDNS,
+  convertMosDNSConfig,
+} from "./mosdns-adapter.js";
 import { registerAllPlugins } from "./plugins/index.js";
 import * as yaml from "js-yaml";
 
@@ -188,32 +191,4 @@ async function handleApiRequest(request, env, config) {
 
   // Default response for unknown API endpoints
   return new Response("Not Found", { status: 404 });
-}
-
-/**
- * Convert MosDNS configuration to FluxDNS configuration
- *
- * @param {Object} mosdnsConfig - MosDNS configuration
- * @returns {Object} FluxDNS configuration
- */
-function convertMosDNSConfig(mosdnsConfig) {
-  try {
-    // Import and use the mosdns-adapter
-    const { convertMosDNSConfig } = require("./mosdns-adapter.js");
-    return convertMosDNSConfig(mosdnsConfig);
-  } catch (error) {
-    console.error("Error converting MosDNS config:", error);
-    // Return default config as fallback
-    return {
-      plugins: [
-        {
-          tag: "default_forward",
-          type: "forward",
-          args: {
-            upstream: "https://cloudflare-dns.com/dns-query",
-          },
-        },
-      ],
-    };
-  }
 }

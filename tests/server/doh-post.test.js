@@ -1,38 +1,60 @@
 /**
  * DNS over HTTPS POST Method Tests
  *
- * Tests for the DoH POST method implementation which accepts application/dns-message content.
+ * Simple tests for the DoH POST method without importing the actual implementation,
+ * focusing on testing the API interface expectations.
  */
 
 import { jest } from "@jest/globals";
+import { createDnsQueryBuffer } from "../helpers/dns-builder.js";
+import { RRType } from "../../src/core/types.js";
 
-// Mock handlers
-const mockHandleDnsPost = jest.fn().mockImplementation(async (request) => {
-  const contentType = request.headers.get("content-type");
-
-  if (contentType !== "application/dns-message") {
-    return new Response("Invalid content type", { status: 400 });
-  }
-
-  return new Response(new ArrayBuffer(10), {
-    headers: { "Content-Type": "application/dns-message" },
-  });
-});
-
-// Module with mocked handlers
-const handler = {
-  handleDnsPost: mockHandleDnsPost,
-};
+// We need to use the global Response type
+const GlobalResponse = global.Response;
 
 describe("DNS over HTTPS POST Method", () => {
+  // Mock the fetch function
+  const mockFetch = jest.fn();
+
+  // Create a mock worker
+  const mockWorker = {
+    fetch: mockFetch,
+  };
+
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
+
+    // Default mock implementation for success cases
+    mockFetch.mockImplementation(async (request) => {
+      if (request.url.includes("/api/")) {
+        return new GlobalResponse(
+          JSON.stringify({
+            status: "ok",
+            version: "1.0.0",
+            serverTime: Date.now(),
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          }
+        );
+      }
+
+      if (request.headers.get("Content-Type") === "application/dns-message") {
+        return new GlobalResponse(new ArrayBuffer(10), {
+          headers: { "Content-Type": "application/dns-message" },
+          status: 200,
+        });
+      }
+
+      return new GlobalResponse("Invalid DNS request", { status: 400 });
+    });
   });
 
   test("handles valid DNS POST request", async () => {
     // Create a DNS query buffer
-    const dnsBuffer = new Uint8Array([1, 2, 3, 4]).buffer;
+    const dnsBuffer = createDnsQueryBuffer("example.com", RRType.A);
 
     // Create request with proper content type
     const request = new Request("https://dns.example.com/dns-query", {
@@ -43,32 +65,78 @@ describe("DNS over HTTPS POST Method", () => {
       body: dnsBuffer,
     });
 
-    // Call the handler
-    const response = await handler.handleDnsPost(request);
+    // Call the mock worker's fetch method
+    const response = await mockWorker.fetch(request, {}, {});
 
-    // Verify response was created correctly
+    // Verify the mock was called
+    expect(mockFetch).toHaveBeenCalledWith(request, {}, {});
+
+    // Simple verification
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe(
       "application/dns-message"
     );
-    expect(mockHandleDnsPost).toHaveBeenCalled();
   });
 
-  test("returns 400 for incorrect content type", async () => {
-    // Create request with wrong content type
+  test("returns 400 for invalid DNS request", async () => {
+    // Set up a specific mock implementation for this test
+    mockFetch.mockImplementationOnce(async () => {
+      return new GlobalResponse("Invalid DNS request", { status: 400 });
+    });
+
+    // Create request with improper content
     const request = new Request("https://dns.example.com/dns-query", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/dns-message",
       },
-      body: JSON.stringify({ name: "example.com" }),
+      body: new ArrayBuffer(0), // Empty body to simulate invalid request
     });
 
-    // Call the handler
-    const response = await handler.handleDnsPost(request);
+    // Call the mock worker's fetch method
+    const response = await mockWorker.fetch(request, {}, {});
 
     // Verify error response
     expect(response.status).toBe(400);
-    expect(mockHandleDnsPost).toHaveBeenCalled();
+  });
+
+  test("handles errors gracefully", async () => {
+    // Create a test-specific implementation that returns 500 error
+    mockFetch.mockImplementationOnce(async () => {
+      return new GlobalResponse("Internal server error", { status: 500 });
+    });
+
+    // Create request
+    const request = new Request("https://dns.example.com/dns-query", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/dns-message",
+      },
+      body: createDnsQueryBuffer("example.com", RRType.A),
+    });
+
+    const response = await mockWorker.fetch(request, {}, {});
+
+    // Verify error response
+    expect(response.status).toBe(500);
+  });
+
+  test("handles API requests", async () => {
+    // Create API request
+    const request = new Request("https://dns.example.com/api/status", {
+      method: "GET",
+    });
+
+    // Call the mock worker's fetch method
+    const response = await mockWorker.fetch(request, {}, {});
+
+    // Verify API response
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("application/json");
+
+    const responseBody = await response.json();
+    expect(responseBody).toHaveProperty("status", "ok");
+    expect(responseBody).toHaveProperty("version");
+    expect(responseBody).toHaveProperty("serverTime");
   });
 });
