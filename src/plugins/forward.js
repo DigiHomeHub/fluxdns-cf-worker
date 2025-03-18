@@ -22,7 +22,7 @@ export function register() {
  */
 export async function executeForward(ctx, args) {
   const {
-    upstream = "https://doh.pub/dns-query",
+    upstream = "https://security.cloudflare-dns.com/dns-query",
     timeout = 5000,
     edns_client_subnet = false,
     use_http = false,

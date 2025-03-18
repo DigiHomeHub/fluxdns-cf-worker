@@ -109,15 +109,37 @@ export class DnsContext {
    */
   static async fromJsonRequest(request) {
     try {
-      const json = await request.json();
+      let json;
 
-      // Check if we have a valid query
-      if (!json.name) {
-        return null;
+      // Check if this is a GET request, if so get information from URL parameters
+      if (request.method === "GET") {
+        const url = new URL(request.url);
+        const name = url.searchParams.get("name");
+        const type = url.searchParams.get("type") || "A";
+
+        if (!name) {
+          return null;
+        }
+
+        json = { name, type };
+      } else {
+        // If not a GET request, try to parse JSON from request body
+        json = await request.json();
+
+        // Check if there's a valid name parameter
+        if (!json.name) {
+          return null;
+        }
       }
 
-      // Create a synthetic DNS message from the JSON
-      const dnsMessage = parseDnsQueryFromJson(json);
+      // Create an appropriate URL string from the URL object for parseDnsQueryFromJson
+      const urlString = new URL(request.url).toString();
+
+      // Create a synthetic DNS message
+      const dnsQueryObj = parseDnsQueryFromJson(urlString);
+
+      // Extract the binary buffer for the DNS message
+      const dnsMessage = dnsQueryObj.buffer;
 
       // Create context with the JSON query info
       return new DnsContext(request, dnsMessage, json);
