@@ -22,7 +22,7 @@ export function register() {
  */
 export async function executeForward(ctx, args) {
   const {
-    upstream = "https://doh.pub/dns-query",
+    upstream = "https://security.cloudflare-dns.com/dns-query",
     timeout = 5000,
     edns_client_subnet = false,
     use_http = false,
@@ -93,7 +93,7 @@ export async function executeForward(ctx, args) {
     // TODO: Add response time recording
     // ctx.metadata.stats.upstreamResponseTime =
     //   Date.now() - ctx.metadata.timings.start;
-
+    console.log("Response:", response);
     return true;
   } catch (error) {
     console.error("Error in forward plugin:", error);
