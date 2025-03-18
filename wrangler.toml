@@ -7,7 +7,7 @@ compatibility_date = "2023-05-18"
 
 # KV Namespace for storing domain lists, IP lists, and hosts files
 kv_namespaces = [
-  { binding = "DATA_KV", id = "your-kv-namespace-id-here", preview_id = "your-preview-kv-id-here" }
+  { binding = "DATA_KV", id = "aa2231353ad94e78a274c0add1879d02" }
 ]
 
 [vars]
