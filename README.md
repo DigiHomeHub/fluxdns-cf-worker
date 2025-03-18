@@ -24,7 +24,7 @@ A flexible DNS-over-HTTPS (DoH) proxy implemented as a Cloudflare Worker, with s
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/fluxdns-cf-worker.git
+git clone https://github.com/DigiHomeHub/fluxdns-cf-worker.git
 cd fluxdns-cf-worker
 ```
 
