@@ -98,7 +98,7 @@ async function handleApiRequest(request, env, config) {
       JSON.stringify({
         status: "ok",
         version: "1.0.0",
-        uptime: Date.now() - global.startTime || 0,
+        serverTime: Date.now(),
       }),
       {
         headers: { "Content-Type": "application/json" },
@@ -189,9 +189,6 @@ async function handleApiRequest(request, env, config) {
   // Default response for unknown API endpoints
   return new Response("Not Found", { status: 404 });
 }
-
-// Set start time for uptime tracking
-global.startTime = Date.now();
 
 /**
  * Convert MosDNS configuration to FluxDNS configuration
