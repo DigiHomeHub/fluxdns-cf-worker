@@ -91,8 +91,7 @@ export function loadConfig(env) {
  * @returns {Object} Basic configuration
  */
 function createBasicConfig(env) {
-  const upstream =
-    env.UPSTREAM_DNS || "https://security.cloudflare-dns.com/dns-query";
+  const upstream = env.UPSTREAM_DNS || "https://doh.pub/dns-query";
   const timeout = parseInt(env.TIMEOUT || "5000", 10);
 
   return {
@@ -125,8 +124,7 @@ function createBasicConfig(env) {
  * @returns {Object} Ad blocking configuration
  */
 function createAdBlockConfig(env) {
-  const upstream =
-    env.UPSTREAM_DNS || "https://security.cloudflare-dns.com/dns-query";
+  const upstream = env.UPSTREAM_DNS || "https://doh.pub/dns-query";
   const timeout = parseInt(env.TIMEOUT || "5000", 10);
   const blockListUrl =
     env.BLOCKLIST_URL ||
@@ -171,8 +169,7 @@ function createAdBlockConfig(env) {
  * @returns {Object} Split DNS configuration
  */
 function createSplitConfig(env) {
-  const defaultUpstream =
-    env.DEFAULT_UPSTREAM || "https://security.cloudflare-dns.com/dns-query";
+  const defaultUpstream = env.DEFAULT_UPSTREAM || "https://doh.pub/dns-query";
   const alternateUpstream =
     env.ALTERNATE_UPSTREAM || "https://dns.google/dns-query";
   const timeout = parseInt(env.TIMEOUT || "5000", 10);

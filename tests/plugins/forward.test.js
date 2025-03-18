@@ -75,7 +75,7 @@ describe("Forward Plugin Functionality", () => {
 
     // Verify fetch was called with correct parameters - use looser check with expect.any() for complex objects
     expect(fetchSpy).toHaveBeenCalledWith(
-      "https://doh.pub/dns-query",
+      "https://security.cloudflare-dns.com/dns-query",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -90,7 +90,9 @@ describe("Forward Plugin Functionality", () => {
     expect(mockContext.setResponse).toHaveBeenCalled();
 
     // Verify metadata was updated
-    expect(mockContext.metadata.upstream).toBe("https://doh.pub/dns-query");
+    expect(mockContext.metadata.upstream).toBe(
+      "https://security.cloudflare-dns.com/dns-query"
+    );
   });
 
   test("should forward request to custom upstream server", async () => {
