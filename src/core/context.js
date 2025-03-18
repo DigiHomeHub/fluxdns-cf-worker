@@ -5,6 +5,7 @@
  */
 
 import { RRType, RCODE } from "./types.js";
+import { parseDnsQueryFromJson } from "./dns-message.js";
 
 /**
  * DNS Context class
@@ -46,20 +47,37 @@ export class DnsContext {
         // GET request with base64 parameter
         const url = new URL(request.url);
         const dns = url.searchParams.get("dns");
+        const name = url.searchParams.get("name");
 
-        if (!dns) {
+        if (dns) {
+          // Standard DoH RFC 8484 format
+          // Decode base64
+          const decoded = atob(dns.replace(/_/g, "/").replace(/-/g, "+"));
+          const bytes = new Uint8Array(decoded.length);
+
+          for (let i = 0; i < decoded.length; i++) {
+            bytes[i] = decoded.charCodeAt(i);
+          }
+
+          dnsMessage = bytes.buffer;
+        } else if (name) {
+          // Google DoH JSON API format
+          try {
+            const query = parseDnsQueryFromJson(request.url);
+            const ctx = new DnsContext(request, query.buffer);
+            ctx.jsonQuery = {
+              name: query.questions[0].name,
+              type: query.questions[0].type,
+            };
+            return ctx;
+          } catch (error) {
+            console.error("Error parsing JSON DNS query:", error);
+            return null;
+          }
+        } else {
+          console.log("No DNS or name parameter found in GET request");
           return null;
         }
-
-        // Decode base64
-        const decoded = atob(dns.replace(/_/g, "/").replace(/-/g, "+"));
-        const bytes = new Uint8Array(decoded.length);
-
-        for (let i = 0; i < decoded.length; i++) {
-          bytes[i] = decoded.charCodeAt(i);
-        }
-
-        dnsMessage = bytes.buffer;
       } else if (request.method === "POST") {
         // POST request with binary data
         dnsMessage = await request.arrayBuffer();
@@ -68,7 +86,8 @@ export class DnsContext {
       if (!dnsMessage || dnsMessage.byteLength === 0) {
         return null;
       }
-
+      console.log("DNS message created from request", request);
+      console.log("DNS message", dnsMessage);
       return new DnsContext(request, dnsMessage);
     } catch (error) {
       console.error("Error creating DNS context:", error);
@@ -193,6 +212,47 @@ export class DnsContext {
       return new Response("No DNS response", { status: 500 });
     }
 
+    // Check if we need to return JSON format (for ?name= queries)
+    const url = new URL(this.request.url);
+    if (url.searchParams.has("name") || this.jsonQuery) {
+      // Convert DNS response to JSON format for name= queries
+      // This is a simple implementation that will need to be replaced
+      // with actual DNS message parsing for a production implementation
+      return new Response(
+        JSON.stringify({
+          Status: 0,
+          TC: false,
+          RD: true,
+          RA: true,
+          AD: false,
+          CD: false,
+          Question: [
+            {
+              name: this.getQueryDomain(),
+              type: this.getQueryType(),
+            },
+          ],
+          Answer: [
+            // Actual answers would need to be parsed from this.response
+            // This is just a placeholder
+            {
+              name: this.getQueryDomain(),
+              type: this.getQueryType(),
+              TTL: 300,
+              data: "1.2.3.4", // Placeholder
+            },
+          ],
+        }),
+        {
+          headers: {
+            "Content-Type": "application/dns-json",
+            "Cache-Control": "max-age=300",
+          },
+        }
+      );
+    }
+
+    // Return standard binary DNS response
     return new Response(this.response, {
       headers: {
         "Content-Type": "application/dns-message",

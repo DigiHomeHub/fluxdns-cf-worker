@@ -41,15 +41,35 @@ export default {
       const url = new URL(request.url);
       const path = url.pathname;
 
+      console.log(`Received request for path: ${path}`);
+
       // Handle API endpoints if configured
       if (path.startsWith("/api/")) {
+        console.log("Handling API request");
         return handleApiRequest(request, env, config);
       }
+
+      // Verify this is a standard DoH request to /dns-query
+      if (path !== "/dns-query") {
+        console.log(
+          `Invalid path: ${path}. DoH requests must use /dns-query path.`
+        );
+        return new Response(
+          "Not Found. DoH requests must use /dns-query path.",
+          {
+            status: 404,
+            headers: { "Content-Type": "text/plain" },
+          }
+        );
+      }
+
+      console.log("Processing DNS-over-HTTPS request");
 
       // Create DNS context from request
       const dnsContext = await DnsContext.fromRequest(request);
 
       if (!dnsContext) {
+        console.log("Invalid DNS request format");
         return new Response("Invalid DNS request", { status: 400 });
       }
 
