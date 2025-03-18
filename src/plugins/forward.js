@@ -93,7 +93,7 @@ export async function executeForward(ctx, args) {
     // TODO: Add response time recording
     // ctx.metadata.stats.upstreamResponseTime =
     //   Date.now() - ctx.metadata.timings.start;
-
+    console.log("Response:", response);
     return true;
   } catch (error) {
     console.error("Error in forward plugin:", error);
