@@ -22,4 +22,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        run: |
+          npm run test:core
+          npm run test:plugins
+          npm run test:integration

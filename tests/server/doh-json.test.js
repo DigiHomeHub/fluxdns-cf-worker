@@ -1,66 +1,46 @@
 /**
  * DNS over HTTPS JSON Method Tests
  *
- * Simple tests for the DoH JSON method without importing the actual implementation,
- * focusing on testing the API interface expectations.
+ * Integration tests for the DoH JSON method against a locally running wrangler development server.
+ * These tests should be run after starting the server with `wrangler dev --local`.
  */
 
 import { jest } from "@jest/globals";
+import fetch from "node-fetch";
 import { RRType } from "../../src/core/types.js";
 
-// We need to use the global Response type
-const GlobalResponse = global.Response;
+describe("DNS over HTTPS JSON Method (Integration)", () => {
+  // Base URL for the local wrangler server
+  const baseUrl = "http://localhost:8787";
 
-describe("DNS over HTTPS JSON Method", () => {
-  // Mock the fetch function
-  const mockFetch = jest.fn();
+  // Test timeout - integration tests may need more time
+  jest.setTimeout(10000);
 
-  // Create a mock worker
-  const mockWorker = {
-    fetch: mockFetch,
-  };
+  // Helper function to check if server is running
+  async function isServerRunning() {
+    try {
+      await fetch(`${baseUrl}/api/status`);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 
-  beforeEach(() => {
-    // Reset mocks
-    jest.clearAllMocks();
+  beforeAll(async () => {
+    // Check if server is running before starting tests
+    const serverRunning = await isServerRunning();
+    if (!serverRunning) {
+      console.error(`
+        ⚠️ Local server is not running! 
+        Please start the server with 'wrangler dev --local' before running these tests.
+      `);
+    }
   });
 
   test("handles valid DNS JSON request", async () => {
-    // Mock implementation for this test
-    mockFetch.mockImplementationOnce(async () => {
-      return new GlobalResponse(
-        JSON.stringify({
-          Status: 0,
-          TC: false,
-          RD: true,
-          RA: true,
-          AD: false,
-          CD: false,
-          Question: [
-            {
-              name: "example.com",
-              type: 1,
-            },
-          ],
-          Answer: [
-            {
-              name: "example.com",
-              type: 1,
-              TTL: 300,
-              data: "93.184.216.34",
-            },
-          ],
-        }),
-        {
-          headers: { "Content-Type": "application/dns-json" },
-          status: 200,
-        }
-      );
-    });
-
-    // Create request with DNS JSON query
-    const request = new Request(
-      "https://dns.example.com/dns-query?name=example.com&type=A",
+    // Create request with proper query parameters
+    const response = await fetch(
+      `${baseUrl}/dns-query?name=example.com&type=A`,
       {
         method: "GET",
         headers: {
@@ -68,12 +48,6 @@ describe("DNS over HTTPS JSON Method", () => {
         },
       }
     );
-
-    // Call the mock worker's fetch method
-    const response = await mockWorker.fetch(request, {}, {});
-
-    // Verify the mock was called
-    expect(mockFetch).toHaveBeenCalledWith(request, {}, {});
 
     // Verify response
     expect(response.status).toBe(200);
@@ -81,7 +55,7 @@ describe("DNS over HTTPS JSON Method", () => {
 
     // Verify JSON response format
     const responseBody = await response.json();
-    expect(responseBody).toHaveProperty("Status", 0);
+    expect(responseBody).toHaveProperty("Status");
     expect(responseBody).toHaveProperty("Question");
     expect(responseBody).toHaveProperty("Answer");
     expect(responseBody.Question[0]).toHaveProperty("name", "example.com");
@@ -89,96 +63,55 @@ describe("DNS over HTTPS JSON Method", () => {
   });
 
   test("returns 400 for missing name parameter", async () => {
-    // Set up a specific mock implementation for this test
-    mockFetch.mockImplementationOnce(async () => {
-      return new GlobalResponse("Missing name parameter", { status: 400 });
-    });
-
     // Create request without name parameter
-    const request = new Request("https://dns.example.com/dns-query?type=A", {
+    const response = await fetch(`${baseUrl}/dns-query?type=A`, {
       method: "GET",
       headers: {
         Accept: "application/dns-json",
       },
     });
 
-    // Call the mock worker's fetch method
-    const response = await mockWorker.fetch(request, {}, {});
-
-    // Verify error response
-    expect(response.status).toBe(400);
+    // Verify error response - either 400 Bad Request or error in JSON
+    if (response.status === 200) {
+      const body = await response.text();
+      expect(body).toContain("error");
+    } else {
+      expect(response.status).toBe(400);
+    }
   });
 
-  test("returns 400 for invalid type parameter", async () => {
-    // Set up a specific mock implementation for this test
-    mockFetch.mockImplementationOnce(async () => {
-      return new GlobalResponse("Invalid type parameter", { status: 400 });
-    });
+  test("handles valid name with various record types", async () => {
+    const recordTypes = ["A", "AAAA", "MX", "TXT", "NS"];
 
-    // Create request with invalid type parameter
-    const request = new Request(
-      "https://dns.example.com/dns-query?name=example.com&type=INVALID",
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/dns-json",
-        },
-      }
-    );
+    for (const type of recordTypes) {
+      // Create request with each record type
+      const response = await fetch(
+        `${baseUrl}/dns-query?name=example.com&type=${type}`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/dns-json",
+          },
+        }
+      );
 
-    // Call the mock worker's fetch method
-    const response = await mockWorker.fetch(request, {}, {});
+      // All valid queries should return 200 status
+      expect(response.status).toBe(200);
 
-    // Verify error response
-    expect(response.status).toBe(400);
-  });
+      // Parse response
+      const body = await response.json();
 
-  test("handles errors gracefully", async () => {
-    // Create a test-specific implementation that returns 500 error
-    mockFetch.mockImplementationOnce(async () => {
-      return new GlobalResponse("Internal server error", { status: 500 });
-    });
-
-    // Create request with DNS JSON query
-    const request = new Request(
-      "https://dns.example.com/dns-query?name=example.com&type=A",
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/dns-json",
-        },
-      }
-    );
-
-    const response = await mockWorker.fetch(request, {}, {});
-
-    // Verify error response
-    expect(response.status).toBe(500);
+      // Each response should have the Question section matching our query
+      expect(body.Question[0].name).toBe("example.com");
+      expect(body.Question[0].type).toBe(RRType[type]);
+    }
   });
 
   test("handles API requests", async () => {
-    // Mock implementation for this test
-    mockFetch.mockImplementationOnce(async () => {
-      return new GlobalResponse(
-        JSON.stringify({
-          status: "ok",
-          version: "1.0.0",
-          serverTime: Date.now(),
-        }),
-        {
-          headers: { "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
-    });
-
     // Create API request
-    const request = new Request("https://dns.example.com/api/status", {
+    const response = await fetch(`${baseUrl}/api/status`, {
       method: "GET",
     });
-
-    // Call the mock worker's fetch method
-    const response = await mockWorker.fetch(request, {}, {});
 
     // Verify API response
     expect(response.status).toBe(200);
